@@ -2,8 +2,6 @@ import csv
 from bggcli.commands import collection_export
 
 from bggcli.main import _main
-from bggcli.ui.collectionpage import CollectionPage
-from bggcli.util.webdriver import WebDriver
 from commons import *
 
 
@@ -39,29 +37,48 @@ def test_collection(tmpdir):
 
     #
     debug_test()
-    debug_test("1. Ensure the collection is empty")
-    with WebDriver('test_collection-empty') as web_driver:
-        if not CollectionPage(web_driver.driver).is_empty(LOGIN):
-            try:
-                _main(['-v', '--login', LOGIN, '--password', PASSWORD,
-                      'collection-delete', '--force', COLLECTION_CSV_PATH])
-            except BaseException as e:
-                assert False, "Delete command should not fail: %s" % e
+    debug_test("1. Fetch current collection as CSV")
+    delete_list_file = tmpdir.join('delete-collection.csv').strpath
+    assert not os.path.exists(delete_list_file)
+    _main(['-v', '--login', LOGIN, '--password', PASSWORD,
+          'collection-export', delete_list_file])
+    assert os.path.isfile(delete_list_file)
+    debug_test("-> [ok]")
 
-            assert CollectionPage(web_driver.driver).is_empty(LOGIN), 'Collection should be empty!'
-            debug_test("-> [ok (collection was not empty)]")
-        else:
-            debug_test("-> [ok (collection was empty)]")
-
+    #
     debug_test()
-    debug_test("2. Import collection")
+    debug_test("2. Delete everything from collection")
+    try:
+        _main(['-v', '--login', LOGIN, '--password', PASSWORD,
+              'collection-delete', '--force', delete_list_file])
+    except BaseException as e:
+        assert False, "Delete command should not fail: %s" % e
+
+    #
+    debug_test()
+    debug_test("3. Test that collection is empty")
+    delete_check_file = tmpdir.join('delete-check-collection.csv').strpath
+    assert not os.path.exists(delete_check_file)
+    _main(['-v', '--login', LOGIN, '--password', PASSWORD,
+          'collection-export', delete_check_file])
+    reader_check_empty = csv.DictReader(open(delete_check_file, 'rU'))
+    try:
+        reader_check_empty.next()
+        assert False, 'Collection should be empty!'
+    except StopIteration:
+        pass
+    debug_test("-> [ok]")
+
+    #
+    debug_test()
+    debug_test("4. Import collection")
     _main(['-v', '--login', LOGIN, '--password', PASSWORD,
           'collection-import', COLLECTION_CSV_PATH])
     debug_test("-> [ok]")
 
     #
     debug_test()
-    debug_test("3. Export collection as CSV")
+    debug_test("5. Export collection as CSV")
     actual_file = tmpdir.join('actual-collection.csv').strpath
     assert not os.path.exists(actual_file)
     _main(['-v', '--login', LOGIN, '--password', PASSWORD,
@@ -71,7 +88,7 @@ def test_collection(tmpdir):
 
     #
     debug_test()
-    debug_test("4. Compare CSV files")
+    debug_test("6. Compare CSV files")
     compare_csv_files(actual_file, COLLECTION_CSV_PATH)
     debug_test("Comparison OK!")
 

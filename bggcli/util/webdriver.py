@@ -9,7 +9,8 @@ import os
 
 from selenium import webdriver
 from selenium.common.exceptions import WebDriverException
-from selenium.webdriver import DesiredCapabilities
+from selenium.webdriver.common.desired_capabilities import DesiredCapabilities
+#from selenium.webdriver import DesiredCapabilities
 from bggcli.util.logger import Logger
 
 
@@ -41,10 +42,15 @@ class WebDriver:
 
     # noinspection PyMethodMayBeStatic
     def create_local_firefox_driver(self, profile_path):
+        caps = DesiredCapabilities.FIREFOX
+        caps["binary"] = "/Applications/Firefox.app/Contents/MacOS/firefox-bin"
+        
+        
+        print "profile_path", profile_path
         if profile_path is None:
-            profile = webdriver.FirefoxProfile()
+            profile = webdriver.FirefoxProfile(capabilities=caps)
         else:
-            profile = webdriver.FirefoxProfile(profile_path)
+            profile = webdriver.FirefoxProfile(profile_path, capabilities=caps)
 
         return webdriver.Firefox(firefox_profile=profile)
 

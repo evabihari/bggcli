@@ -1,36 +1,39 @@
 """
 Delete games in your collection from a CSV file. BE CAREFUL, this action is irreversible!
-
 Usage: bggcli [-v] -l <login> -p <password>
-              [-c <name>=<value>]...
               collection-delete [--force] <file>
-
 Options:
     -v                              Activate verbose logging
     -l, --login <login>             Your login on BGG
     -p, --password <password>       Your password on BGG
     --force                         Force deletion, without any confirmation
-    -c <name=value>                 To specify advanced options, see below
-
-Advanced options:
-    browser-keep=<true|false>       If you want to keep your web browser opened at the end of the
-                                    operation
-    browser-profile-dir=<dir>       Path or your browser profile if you want to use an existing
-
 Arguments:
     <file> The CSV file with games to delete
 """
+from urllib import urlencode
+import cookielib
+import urllib2
 import sys
 
+from bggcli import BGG_BASE_URL
 from bggcli.commands import check_file
 from bggcli.util.csvreader import CsvReader
-from bggcli.ui.gamepage import GamePage
-from bggcli.ui.loginpage import LoginPage
 from bggcli.util.logger import Logger
-from bggcli.util.webdriver import WebDriver
 
 
-def execute(args, options):
+def game_deleter(opener, row):
+    collid = row['collid']
+    if not collid:
+        return
+
+    response = opener.open(BGG_BASE_URL + '/geekcollection.php', urlencode({
+        'ajax': 1, 'action': 'delete', 'collid': collid}))
+
+    if response.code != 200:
+        Logger.error("Failed to delete 'collid'=%s!" % collid, sysexit=True)
+
+
+def execute(args):
     login = args['--login']
 
     file_path = check_file(args)
@@ -53,11 +56,17 @@ def execute(args, options):
 
     Logger.info("Deleting games for '%s' account..." % login)
 
-    with WebDriver('collection-delete', args, options) as web_driver:
-        if not LoginPage(web_driver.driver).authenticate(login, args['--password']):
-            sys.exit(1)
+    cj = cookielib.CookieJar()
+    opener = urllib2.build_opener(urllib2.HTTPCookieProcessor(cj))
+    Logger.info("Authenticating...", break_line=False)
+    opener.open(BGG_BASE_URL + '/login', urlencode({
+        'action': 'login', 'username': login, 'password': args['--password']}))
+    if not any(cookie.name == "bggusername" for cookie in cj):
+        Logger.info(" [error]", append=True)
+        Logger.error("Authentication failed for user '%s'!" % login, sysexit=True)
+    Logger.info(" [done]", append=True)
 
-        Logger.info("Deleting %s games..." % game_count)
-        game_page = GamePage(web_driver.driver)
-        csv_reader.iterate(lambda row: game_page.delete(row))
-        Logger.info("Deletion has finished.")
+
+    Logger.info("Deleting %s games..." % game_count)
+    csv_reader.iterate(lambda row: game_deleter(opener, row))
+    Logger.info("Deletion has finished.")

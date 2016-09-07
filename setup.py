@@ -40,7 +40,8 @@ setup(
         bggcli=bggcli.main:main
     ''',
     install_requires=[
-        'selenium', 'docopt'
+#        'selenium', 'docopt'
+         'docopt'
     ],
     keywords='bgg boardgamegeek',
     license='MIT',

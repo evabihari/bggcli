@@ -3,7 +3,6 @@
 Command Line Interface for BoardGameGeek.com
 
 Usage: bggcli   [--version] [-v] [-l <login>] [-p <password>]
-                [-c <name>=<value>]...
                 <command> [<args>...]
 
 Options:
@@ -11,13 +10,6 @@ Options:
     -v                              Activate verbose logging
     -l, --login <login>             Your login on BGG
     -p, --password <password>       Your password on BGG
-    -c <name=value>                 To specify advanced options, see below
-
-Advanced options:
-    browser-keep=<true|false>       If you want to keep your web browser opened at the end of the
-                                    operation
-    browser-profile-dir=<dir>       Path or your browser profile if you want to use an existing
-                                    profile (useful for debugging purpose)
 
 Available commands are:
    help                 Display general help or help for a specific command
@@ -30,7 +22,8 @@ See 'bggcli help <command>' for more information on a specific command.
 import sys
 import time
 
-from selenium.common.exceptions import WebDriverException
+#from selenium.common.exceptions import WebDriverException
+from urllib2 import URLError
 
 from docopt import docopt
 
@@ -76,12 +69,18 @@ def main():
 def _main(argv):
     # Don't find any good git command-like parser in Python with user-friendly error
     # management, docopt is (too) simple
+    print " argv: ",  argv
+    print "__doc__:", __doc__ 
     if not argv:
         argv = ['help']
 
     args = docopt(__doc__, argv, version='bggcli %s' % VERSION, options_first=True)
 
+    print " args: ", args
+
     command = args['<command>']
+
+    print "command:", command
 
     Logger.isVerbose = args.get('-v')
 
@@ -92,14 +91,15 @@ def _main(argv):
 
 
 def parse_commad_args(command_module, argv):
-    result = docopt(command_module.__doc__, argv, version='bggcli %s' % VERSION,
+##    result = docopt(command_module.__doc__, argv, version='bggcli %s' % VERSION,
+    return docopt(command_module.__doc__, argv, version='bggcli %s' % VERSION,
                     options_first=False)
 
-    try:
-        return result, explode_dyn_args(result['-c'])
-    except StandardError:
-        Logger.info('Invalid syntax for -c option, should be "-c key=value"!')
-        return None
+    ## try:
+    ##     return result, explode_dyn_args(result['-c'])
+    ## except StandardError:
+    ##     Logger.info('Invalid syntax for -c option, should be "-c key=value"!')
+    ##     return None
 
 
 def show_duration(timer_start):
@@ -116,14 +116,17 @@ def execute_command(command, argv):
 
     try:
         command_module = import_command_module(command)
-        command_args, command_args_options = parse_commad_args(command_module, argv)
+##        command_args, command_args_options = parse_commad_args(command_module, argv)
+        command_args = parse_commad_args(command_module, argv)
 
         if command_args:
-            command_module.execute(command_args, command_args_options)
+##            command_module.execute(command_args, command_args_options)
+            command_module.execute(command_args)
             show_duration(timer_start)
     except ImportError:
         exit_unknown_command(command)
-    except WebDriverException as e:
+##    except WebDriverException as e:
+    except URLError as e: 
         Logger.error(UI_ERROR_MSG, e)
     except Exception as e:
         Logger.error("Encountered an unexpected error, please report the issue to the author", e)

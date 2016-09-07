@@ -8,7 +8,8 @@ Utility in charge of reading the CSV file
 
 import csv
 
-from selenium.common.exceptions import WebDriverException
+##from selenium.common.exceptions import WebDriverException
+from urllib2 import URLError
 
 from bggcli import UI_ERROR_MSG, BGG_SUPPORTED_FIELDS
 from bggcli.util.logger import Logger
@@ -40,8 +41,11 @@ class CsvReader:
             index = 1
             for row in self.reader:
                 objectid = row.get('objectid')
-                if objectid is None or not objectid.isdigit():
-                    Logger.error("No valid 'objectid' at line %s!" % index, None, sysexit=True)
+                ## if objectid is None or not objectid.isdigit():
+                ##     Logger.error("No valid 'objectid' at line %s!" % index, None, sysexit=True)
+                collid = row.get('collid')
+                if collid is None or not (collid.isdigit() or (collid == "" and objectid.isdigit())):
+                    Logger.error("No valid 'collid'/'objectid' at line %s!" % index, None, sysexit=True)
                     return
 
                 # Encode in UTF-8
@@ -52,13 +56,17 @@ class CsvReader:
 
                 objectname = row['objectname']
                 if objectname is None or objectname == "":
-                    objectname = "(name not available for objectid=%s)" % objectid
+##                    objectname = "(name not available for objectid=%s)" % objectid
+                    objectname = "(name not available for objectid=%s, collid=%s)" % (objectid, collid)
 
                 Logger.info("[%s/%s] %s... " % (index, self.rowCount, objectname),
                             break_line=False)
                 try:
                     callback(row)
-                except WebDriverException as e:
+                ## except WebDriverException as e:
+                ##     Logger.error(UI_ERROR_MSG, e, sysexit=True)
+                ##     return
+                except URLError as e:
                     Logger.error(UI_ERROR_MSG, e, sysexit=True)
                     return
                 except Exception as e:
