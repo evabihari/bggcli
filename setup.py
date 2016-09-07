@@ -20,7 +20,7 @@ with open('README.rst', 'r', encoding='utf8') as f:
     long_description = f.read()
 
 setup(
-    author='Sylvain Francois',
+    author='Sylvain Francois (small modification by Eva Bihari)',
     author_email='syllant@gmail.com',
     classifiers=[
         "Development Status :: 4 - Beta",
@@ -40,7 +40,6 @@ setup(
         bggcli=bggcli.main:main
     ''',
     install_requires=[
-#        'selenium', 'docopt'
          'docopt'
     ],
     keywords='bgg boardgamegeek',
@@ -51,6 +50,6 @@ setup(
     py_modules=['bggcli'],
     tests_require=["pytest"],
     test_suite='test',
-    url='http://github.org/syllant/bggcli',
+    url='http://github.org/evabihari/bggcli',
     version=VERSION
 )
