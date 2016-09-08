@@ -130,7 +130,8 @@ def write_xml_file(response, csv_dest_path):
     dest_path = '.'.join(csv_dest_path.split('.')[:-1]) + '.xml'
     with open(dest_path, "wb") as dest_file:
         Xml=response.read()
-    dest_file.close()
+        dest_file.write(Xml)
+        dest_file.close()
     return dest_path
 
 
