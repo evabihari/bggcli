@@ -3,7 +3,6 @@
 Command Line Interface for BoardGameGeek.com
 
 Usage: bggcli   [--version] [-v] [-l <login>] [-p <password>]
-                [-c <name>=<value>[,<filter_optvalue]...]...
                 <command> [<args>...]
 
 Options:
@@ -11,7 +10,6 @@ Options:
     -v                              Activate verbose logging
     -l, --login <login>             Your login on BGG
     -p, --password <password>       Your password on BGG
-    -c <name=value>                 To specify advanced options, see below
 
 Advanced options:
    filter=<own|wanttotrade>             Filtering the collection against filter_opt value
@@ -90,18 +88,25 @@ def _main(argv):
 
 
 def parse_commad_args(command_module, argv):
-    result = docopt(command_module.__doc__, argv, version='bggcli %s' % VERSION,
-                    options_first=False)
-
-    try:
-        options=result['-c']
-        if isinstance(options,list):
-            return result, explode_dyn_args(result['-c'])
-        else:
-            return result, explode_dyn_args([result['-c']])
-    except StandardError:
-         Logger.info('Invalid syntax for -c option, should be "-c key=value"!')
-         return None
+    return docopt(command_module.__doc__, argv, version='bggcli %s' % VERSION,
+                  options_first=False)
+    ## result = docopt(command_module.__doc__, argv, version='bggcli %s' % VERSION,
+    ##                 options_first=False)
+    
+    ## Logger.info("parse_commad_args, result= %s " %result)
+    ## try:
+    ##     if result==None:
+    ##         return None, None
+    ##     options=result['-c']
+    ##     if options==None:
+    ##         return result, None
+    ##     if isinstance(options,list):
+    ##         return result, explode_dyn_args(result['-c'])
+    ##     else:
+    ##         return result, explode_dyn_args([result['-c']])
+    ## except StandardError:
+    ##      Logger.info('Invalid syntax for -c option, should be "-c key=value"!')
+    ##      return None
 
 
 def show_duration(timer_start):
@@ -119,10 +124,11 @@ def execute_command(command, argv):
     try:
         command_module = import_command_module(command)
         Logger.info("main.py: execute_command argv: %s" % argv)
-        command_args, command_args_options = parse_commad_args(command_module, argv)
+##        command_args, command_args_options = parse_commad_args(command_module, argv)
+        command_args = parse_commad_args(command_module, argv)
 
         if command_args:
-            command_module.execute(command_args, command_args_options)
+            command_module.execute(command_args)
             show_duration(timer_start)
     except ImportError:
         exit_unknown_command(command)

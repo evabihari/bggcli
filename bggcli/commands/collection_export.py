@@ -1,8 +1,8 @@
 """
 Export a game collection as a CSV file.
 
-Usage: bggcli [-v] -l <login> -p <password> [-c filter=<filter_opt>[,<filter_opt]...]
-              collection-export [--save-xml-file] <file>
+Usage: bggcli [-v] -l <login> -p <password> 
+              collection-export [--filter <name>[=<value>][,<name>[=<value>]]...] [--save-xml-file] <file>
 
 Options:
     -v                              Activate verbose logging
@@ -10,7 +10,7 @@ Options:
     -p, --password <password>       Your password on BGG
     --save-xml-file                 To store the exported raw XML file in addition (will be
                                     save aside the CSV file, with '.xml' extension
-    -c <name=value>                 To specify advanced options, see below
+    --filter <name>[=<value>]
 
 Advanced options:
    filter=<filter_opt>             Filtering the collection against filter_opt value
@@ -36,16 +36,26 @@ from bggcli.util.xmltocsv import XmlToCsv
 EXPORT_QUERY_INTERVAL = 5
 ERROR_FILE_PATH = 'error.txt'
 
+def explode_dyn_args(l):
+    return {k: v for k, v in (x.split('=') for x in l)}
 
-def execute(args, options):
+def get_dyn_kv(kv_string):
+    #'name=value' or 'name'
+    splitted=kv_string.split('=')
+    if len(splitted)==1:
+        return splitted[0],int('1')
+    else:
+        return splitted[0],int(splitted[1])
+            
+def execute(args):
     login = args['--login']
     dest_path = args['<file>']
-##    Logger.info("execute args= '%s' " % args)
-    Logger.info("execute options= '%s' " % options)
+    Logger.info("execute args= '%s' " % args)
+ ##   Logger.info("execute options= '%s' " % options)
     filter_by=None  
-    if args['-c']:
-        filter_by = options.get('filter')
-        Logger.info("Filter provided with '%s' " % filter_by)
+    ## if args['-c']:
+    ##     filter_by = options.get('filter')
+    ##     Logger.info("Filter provided with '%s' " % filter_by)
 
     Logger.info("Exporting collection for '%s' account..." % login)
 
@@ -69,10 +79,14 @@ def execute(args, options):
 
     to_url_encode = {
             'username': login, 'version': 1, 'showprivate': 1, 'stats': 1}
+    filter_by = args['--filter']
+    Logger.info("Filter provided with '%s' " % filter_by)
+    
     if filter_by:
             filter_by_list=filter_by.split(',')
             for item in filter_by_list:
-                to_url_encode.setdefault(item,1)
+                item, value=get_dyn_kv(item)
+                to_url_encode.setdefault(item,value)
 
     Logger.info("to_url_encode '%s'!" % to_url_encode)
     
