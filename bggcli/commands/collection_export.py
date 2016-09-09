@@ -1,25 +1,24 @@
 """
 Export a game collection as a CSV file.
 
-Usage: bggcli [-v] -l <login> -p <password>
-              [-c <name>=<value>]...
+Usage: bggcli [-v] -l <login> -p <password> [-c filter=<filter_opt>]
               collection-export [--save-xml-file] <file>
 
 Options:
     -v                              Activate verbose logging
     -l, --login <login>             Your login on BGG
     -p, --password <password>       Your password on BGG
+    --save-xml-file                 To store the exported raw XML file in addition (will be
+                                    save aside the CSV file, with '.xml' extension
     -c <name=value>                 To specify advanced options, see below
 
 Advanced options:
-    save-xml-file                   To store the exported raw XML file in addition (will be
-                                    save aside the CSV file, with '.xml' extension
-    browser-keep=<true|false>       If you want to keep your web browser opened at the end of the
-                                    operation
-    browser-profile-dir=<dir>       Path or your browser profile if you want to use an existing
-
+   filter=<filter_opt>             Filtering the collection against filter_opt value
+    
 Arguments:
     <file> The CSV file to generate
+    <filter_opt> own | rated | played | comment | trade | want | wishlist | preordered | wanttoplay | wanttobuy | prevowned
+    
 """
 import csv
 from urllib import urlencode
@@ -38,9 +37,15 @@ EXPORT_QUERY_INTERVAL = 5
 ERROR_FILE_PATH = 'error.txt'
 
 
-def execute(args):
+def execute(args, options):
     login = args['--login']
     dest_path = args['<file>']
+##    Logger.info("execute args= '%s' " % args)
+    Logger.info("execute options= '%s' " % options)
+    filter_by=None  
+    if args['-c']:
+        filter_by = options.get('filter')
+        Logger.info("Filter provided with '%s' " % filter_by)
 
     Logger.info("Exporting collection for '%s' account..." % login)
 
@@ -62,8 +67,12 @@ def execute(args):
     # Use XML2 API, see https://www.boardgamegeek.com/wiki/page/BGG_XML_API2#Collection
     # Default CSV export doesn't provide version info!
 
-    url = BGG_BASE_URL + '/xmlapi2/collection?' + urlencode({
-            'username': login, 'version': 1, 'showprivate': 1, 'stats': 1})
+    to_url_encode = {
+            'username': login, 'version': 1, 'showprivate': 1, 'stats': 1}
+    if filter_by:
+            to_url_encode.setdefault(filter_by,1)
+    url = BGG_BASE_URL + '/xmlapi2/collection?' + urlencode(to_url_encode)
+        
     req = urllib2.Request(url)
  
     # Get a BadStatusLine error most of times without this delay!

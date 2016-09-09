@@ -3,6 +3,7 @@
 Command Line Interface for BoardGameGeek.com
 
 Usage: bggcli   [--version] [-v] [-l <login>] [-p <password>]
+                [-c <name>=<value>]...
                 <command> [<args>...]
 
 Options:
@@ -10,6 +11,10 @@ Options:
     -v                              Activate verbose logging
     -l, --login <login>             Your login on BGG
     -p, --password <password>       Your password on BGG
+    -c <name=value>                 To specify advanced options, see below
+
+Advanced options:
+   filter=<own|wanttotrade>             Filtering the collection against filter_opt value
 
 Available commands are:
    help                 Display general help or help for a specific command
@@ -69,18 +74,12 @@ def main():
 def _main(argv):
     # Don't find any good git command-like parser in Python with user-friendly error
     # management, docopt is (too) simple
-    print " argv: ",  argv
-    print "__doc__:", __doc__ 
     if not argv:
         argv = ['help']
 
     args = docopt(__doc__, argv, version='bggcli %s' % VERSION, options_first=True)
 
-    print " args: ", args
-
     command = args['<command>']
-
-    print "command:", command
 
     Logger.isVerbose = args.get('-v')
 
@@ -91,15 +90,18 @@ def _main(argv):
 
 
 def parse_commad_args(command_module, argv):
-##    result = docopt(command_module.__doc__, argv, version='bggcli %s' % VERSION,
-    return docopt(command_module.__doc__, argv, version='bggcli %s' % VERSION,
+    result = docopt(command_module.__doc__, argv, version='bggcli %s' % VERSION,
                     options_first=False)
 
-    ## try:
-    ##     return result, explode_dyn_args(result['-c'])
-    ## except StandardError:
-    ##     Logger.info('Invalid syntax for -c option, should be "-c key=value"!')
-    ##     return None
+    try:
+        options=result['-c']
+        if isinstance(options,list):
+            return result, explode_dyn_args(result['-c'])
+        else:
+            return result, explode_dyn_args([result['-c']])
+    except StandardError:
+         Logger.info('Invalid syntax for -c option, should be "-c key=value"!')
+         return None
 
 
 def show_duration(timer_start):
@@ -116,16 +118,14 @@ def execute_command(command, argv):
 
     try:
         command_module = import_command_module(command)
-##        command_args, command_args_options = parse_commad_args(command_module, argv)
-        command_args = parse_commad_args(command_module, argv)
+        Logger.info(" Argv: %s" % argv)
+        command_args, command_args_options = parse_commad_args(command_module, argv)
 
         if command_args:
-##            command_module.execute(command_args, command_args_options)
-            command_module.execute(command_args)
+            command_module.execute(command_args, command_args_options)
             show_duration(timer_start)
     except ImportError:
         exit_unknown_command(command)
-##    except WebDriverException as e:
     except URLError as e: 
         Logger.error(UI_ERROR_MSG, e)
     except Exception as e:
