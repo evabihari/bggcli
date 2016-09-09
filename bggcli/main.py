@@ -3,7 +3,7 @@
 Command Line Interface for BoardGameGeek.com
 
 Usage: bggcli   [--version] [-v] [-l <login>] [-p <password>]
-                [-c <name>=<value>]...
+                [-c <name>=<value>[,<filter_optvalue]...]...
                 <command> [<args>...]
 
 Options:
@@ -118,7 +118,7 @@ def execute_command(command, argv):
 
     try:
         command_module = import_command_module(command)
-        Logger.info(" Argv: %s" % argv)
+        Logger.info("main.py: execute_command argv: %s" % argv)
         command_args, command_args_options = parse_commad_args(command_module, argv)
 
         if command_args:

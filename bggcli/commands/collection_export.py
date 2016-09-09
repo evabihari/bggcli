@@ -1,7 +1,7 @@
 """
 Export a game collection as a CSV file.
 
-Usage: bggcli [-v] -l <login> -p <password> [-c filter=<filter_opt>]
+Usage: bggcli [-v] -l <login> -p <password> [-c filter=<filter_opt>[,<filter_opt]...]
               collection-export [--save-xml-file] <file>
 
 Options:
@@ -70,7 +70,12 @@ def execute(args, options):
     to_url_encode = {
             'username': login, 'version': 1, 'showprivate': 1, 'stats': 1}
     if filter_by:
-            to_url_encode.setdefault(filter_by,1)
+            filter_by_list=filter_by.split(',')
+            for item in filter_by_list:
+                to_url_encode.setdefault(item,1)
+
+    Logger.info("to_url_encode '%s'!" % to_url_encode)
+    
     url = BGG_BASE_URL + '/xmlapi2/collection?' + urlencode(to_url_encode)
         
     req = urllib2.Request(url)
